@@ -1,0 +1,15 @@
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node & Temporary test artifacts
+node_modules/
+npm-debug.log*
+.taste-skill/
+
+# Local environment secrets (never commit service_role keys)
+.env
+.env.local
+assets/js/config.local.js

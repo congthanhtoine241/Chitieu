@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kiểm Thử Bảo Mật 2 Tài Khoản (RLS) &amp; Dữ Liệu — Sổ Thu Chi Cá Nhân</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/images/favicon.svg" />
+  <link rel="stylesheet" href="./assets/css/variables.css" />
+  <link rel="stylesheet" href="./assets/css/main.css" />
+  <link rel="stylesheet" href="./assets/css/components.css" />
+  <link rel="stylesheet" href="./assets/css/responsive.css" />
+</head>
+<body>
+  <div class="page-container" style="padding-top:var(--space-8);">
+    <div class="section-header">
+      <div>
+        <span class="eyebrow">GIAI ĐOẠN 4: SECURITY &amp; QA VERIFICATION</span>
+        <h1>Trình Kiểm Thử Phân Quyền 2 Tài Khoản (RLS) &amp; Toàn Vẹn Dữ Liệu</h1>
+        <p style="color:var(--ink-muted);margin-top:4px;">
+          Thực thi trực tiếp 20 kịch bản kiểm thử (Test Cases) đối chiếu giữa
+          <strong>Tài khoản A (`account_a@chitieu.vn`)</strong> và
+          <strong>Tài khoản B (`account_b@chitieu.vn`)</strong>.
+        </p>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <a href="./index.html" class="btn btn-secondary">&larr; Quay lại Ứng dụng chính</a>
+        <button type="button" id="btn-rerun-tests" class="btn btn-primary">
+          ↻ Chạy lại toàn bộ 20 Test Cases
+        </button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-top">Tổng Số Test Cases</div>
+        <div id="test-total" class="kpi-value">0</div>
+        <div class="kpi-sub">4 Nhóm kiểm thử chuẩn</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-top">Đạt (PASSED)</div>
+        <div id="test-passed" class="kpi-value income">0</div>
+        <div class="kpi-sub">100% kỳ vọng đạt</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-top">Thất Bại (FAILED)</div>
+        <div id="test-failed" class="kpi-value expense">0</div>
+        <div class="kpi-sub">Lỗi phát hiện</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-top">Trạng Thái Bảo Mật RLS</div>
+        <div id="test-rls-status" class="kpi-value income" style="font-size:1.15rem;">ĐANG KIỂM TRA...</div>
+        <div class="kpi-sub">Cô lập User A &amp; User B</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Phương pháp kiểm thử 2 tài khoản:</strong>
+      Hệ thống khởi tạo 2 phiên đăng nhập độc lập cho <code>account_a@chitieu.vn</code> và <code>account_b@chitieu.vn</code>.
+      Sau khi mỗi tài khoản tạo dữ liệu riêng, bộ kiểm thử thực hiện các cuộc tấn công mô phỏng IDOR
+      (<code>SELECT</code>, <code>INSERT</code> giả mạo <code>user_id</code>, <code>UPDATE</code> chéo, <code>DELETE</code> chéo, gắn <code>category_id</code> chéo)
+      từ Tài khoản B sang Tài khoản A để chứng minh chính sách RLS chặn đứng 100% truy cập trái phép.
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <span class="eyebrow">BẢNG KẾT QUẢ THỰC THI THỜI GIAN THỰC</span>
+          <h3 class="card-title">Chi Tiết 20 Test Cases (Authentication, CRUD, 2-Account RLS, Validation)</h3>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã TC</th>
+              <th>Nhóm Kiểm Thử</th>
+              <th>Kịch Bản Kiểm Thử (Test Case)</th>
+              <th>Kết Quả Thực Thi &amp; Bằng Chứng</th>
+              <th>Trạng Thái</th>
+            </tr>
+          </thead>
+          <tbody id="test-results-body">
+            <tr>
+              <td colspan="5" class="empty-state">Đang chạy bộ kiểm thử...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { runAllSecurityAndCrudTests } from './tests/security-and-crud.test.mjs';
+    import { escapeHtml } from './assets/js/utils.js';
+
+    async function executeAndRender() {
+      const tbody = document.getElementById('test-results-body');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Đang thực thi 20 kịch bản kiểm thử...</td></tr>';
+      }
+
+      const summary = await runAllSecurityAndCrudTests();
+
+      document.getElementById('test-total').textContent = String(summary.total);
+      document.getElementById('test-passed').textContent = String(summary.passed);
+      document.getElementById('test-failed').textContent = String(summary.failed);
+
+      const statusEl = document.getElementById('test-rls-status');
+      if (summary.failed === 0) {
+        statusEl.textContent = 'ĐẠT TUYỆT ĐỐI (20/20)';
+        statusEl.className = 'kpi-value income';
+      } else {
+        statusEl.textContent = `CÓ ${summary.failed} LỖI`;
+        statusEl.className = 'kpi-value expense';
+      }
+
+      tbody.innerHTML = summary.results
+        .map(
+          (r) => `
+          <tr>
+            <td class="mono-value">${escapeHtml(r.id)}</td>
+            <td><span class="badge badge-neutral">${escapeHtml(r.suite)}</span></td>
+            <td><strong>${escapeHtml(r.title)}</strong></td>
+            <td style="font-size:0.86rem;color:var(--ink-muted);">${escapeHtml(r.detail)}</td>
+            <td>
+              <span class="badge ${r.status === 'PASS' ? 'badge-income' : 'badge-expense'}">
+                ${escapeHtml(r.status)} (${r.durationMs}ms)
+              </span>
+            </td>
+          </tr>
+        `
+        )
+        .join('');
+    }
+
+    document.getElementById('btn-rerun-tests')?.addEventListener('click', executeAndRender);
+    executeAndRender();
+  </script>
+</body>
+</html>
